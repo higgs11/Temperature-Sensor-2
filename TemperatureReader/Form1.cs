@@ -15,6 +15,8 @@ namespace TemperatureReader
     {
         int tickStart;
 
+        Boolean first = true;
+
         public Form1()
         {
             InitializeComponent();
@@ -22,6 +24,8 @@ namespace TemperatureReader
             InitGraph();
 
             serialPort1.Open();
+
+
         }
 
         private void InitGraph()
@@ -121,25 +125,37 @@ namespace TemperatureReader
         {
             serialPort1.Write("2");
             Thread.Sleep(200);
-            serialPort1.Write("02");
+            serialPort1.Write("03");
             Thread.Sleep(200);
             serialPort1.Write("0001");
 
-            Thread.Sleep(1000);
+            Thread.Sleep(1500);
             String message = serialPort1.ReadExisting();
 
-            String message2 = message.Substring(message.Length - 6, 4);
+            String message2 = message.Substring(message.Length - 8, 6);
 
             String upper = message2.Substring(0, 2);
-            String lower = message2.Substring(2, 2);
-            byte[] wordArray = new byte[2];
+            String middle = message2.Substring(2, 2);
+            String lower = message2.Substring(4, 2);
+
+            byte[] wordArray = new byte[4];
             wordArray[0] = byte.Parse(lower, System.Globalization.NumberStyles.HexNumber);
-            wordArray[1] = byte.Parse(upper, System.Globalization.NumberStyles.HexNumber);
-            Int16 tempInt = BitConverter.ToInt16(wordArray, 0);
-            Double tempDouble = (0.0625) * (double)(tempInt >> 3);
+            wordArray[1] = byte.Parse(middle, System.Globalization.NumberStyles.HexNumber);
+            wordArray[2] = byte.Parse(upper, System.Globalization.NumberStyles.HexNumber);
+            wordArray[3] = 0;
+            UInt32 tempInt = BitConverter.ToUInt32(wordArray, 0);
+            Double tempDouble = (double)tempInt;
 
             txtRouterTemp.Text = tempDouble.ToString();
 
+            if (first)
+            {
+                first = false;
+            }
+            else
+            {
+                updateGraph(tempDouble);
+            }
             Console.WriteLine("temperature2: " + tempDouble);
 
         }
@@ -148,7 +164,7 @@ namespace TemperatureReader
         {
             try
             {
-                getCoordinatorTemp();
+                getRouterTemp(1);
 
                
             }
