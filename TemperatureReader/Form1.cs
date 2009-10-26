@@ -39,10 +39,12 @@ namespace TemperatureReader
             // The RollingPointPairList is an efficient storage class that always
             // keeps a rolling set of point data without needing to shift any data values
             RollingPointPairList list = new RollingPointPairList(1200);
+            RollingPointPairList list2 = new RollingPointPairList(1200);
 
             // Initially, a curve is added with no data points (list is empty)
             // Color is blue, and there will be no symbols
-            LineItem curve = myPane.AddCurve("Degrees", list, Color.Blue, SymbolType.None);
+            LineItem curve = myPane.AddCurve("power 1", list, Color.Blue, SymbolType.None);
+            LineItem curve2 = myPane.AddCurve("power 2", list2, Color.Red, SymbolType.None);
 
 
             // Just manually control the X axis range so it scrolls continuously
@@ -60,14 +62,14 @@ namespace TemperatureReader
 
         }
 
-        private void updateGraph(double newValue)
+        private void updateGraph(double newValue, int index)
         {
             // Make sure that the curvelist has at least one curve
-            if (zedGraphControl1.GraphPane.CurveList.Count <= 0)
+            if (zedGraphControl1.GraphPane.CurveList.Count <= index)
                 return;
 
             // Get the first CurveItem in the graph
-            LineItem curve = zedGraphControl1.GraphPane.CurveList[0] as LineItem;
+            LineItem curve = zedGraphControl1.GraphPane.CurveList[index] as LineItem;
             if (curve == null)
                 return;
 
@@ -118,7 +120,7 @@ namespace TemperatureReader
 
             Console.WriteLine("temperature1: " + tempDouble);
 
-            updateGraph(tempDouble);
+            updateGraph(tempDouble, 0);
         }
 
         private void getRouterTemp(int deviceId)
@@ -127,9 +129,19 @@ namespace TemperatureReader
             Thread.Sleep(200);
             serialPort1.Write("03");
             Thread.Sleep(200);
-            serialPort1.Write("0001");
 
-            Thread.Sleep(1500);
+            String tempStr;
+            if (deviceId == 0)
+            {
+                tempStr = "0001";
+            }
+            else
+            {
+                tempStr = "287b";
+            }
+            serialPort1.Write(tempStr);
+
+            Thread.Sleep(1000);
             String message = serialPort1.ReadExisting();
 
             String message2 = message.Substring(message.Length - 8, 6);
@@ -154,9 +166,9 @@ namespace TemperatureReader
             }
             else
             {
-                updateGraph(tempDouble);
+                updateGraph(tempDouble, deviceId);
             }
-            Console.WriteLine("temperature2: " + tempDouble);
+            Console.WriteLine("temperature" + deviceId + ": " + tempDouble);
 
         }
 
@@ -164,7 +176,8 @@ namespace TemperatureReader
         {
             try
             {
-                getRouterTemp(1);
+                getRouterTemp(0);
+                //getRouterTemp(1);
 
                
             }
