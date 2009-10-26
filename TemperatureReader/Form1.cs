@@ -116,7 +116,7 @@ namespace TemperatureReader
 
             txtTemperature.Text = tempDouble.ToString();
 
-            Console.WriteLine("temperature1: " + tempDouble);
+            Console.WriteLine("temperature2: " + tempDouble);
 
             updateGraph(tempDouble);
         }
@@ -156,7 +156,7 @@ namespace TemperatureReader
             {
                 updateGraph(tempDouble);
             }
-            Console.WriteLine("temperature2: " + tempDouble);
+            Console.WriteLine("power2: " + tempDouble);
 
         }
 
