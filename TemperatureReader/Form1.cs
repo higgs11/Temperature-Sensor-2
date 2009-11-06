@@ -8,6 +8,9 @@ using System.Text;
 using System.Windows.Forms;
 using System.Threading;
 using ZedGraph;
+using System.IO;
+using System.Collections;
+using test;
 
 namespace TemperatureReader
 {
@@ -17,6 +20,14 @@ namespace TemperatureReader
 
         Boolean first = true;
 
+        TextWriter tw;
+
+        DataUpload _up;
+
+        Hashtable htVals;
+
+        const String OUTLET_NAME = "router_outlet";
+
         public Form1()
         {
             InitializeComponent();
@@ -24,6 +35,17 @@ namespace TemperatureReader
             InitGraph();
 
             serialPort1.Open();
+
+            tw = new StreamWriter("data" + System.DateTime.Now.ToFileTime().ToString() + ".txt");
+
+            //Make the new data upload ""thingy""
+            _up = new DataUpload();
+            //Initialize it with the system name string. ie Jason_House . .no spaces for now
+            _up.Init("jason_home2");
+            //If you have python and apache installed, you can run it locally
+            _up.setLocalDebug(false);
+            htVals = new Hashtable();
+            htVals.Add(OUTLET_NAME, 0);
 
 
         }
@@ -103,7 +125,7 @@ namespace TemperatureReader
 
         private void getCoordinatorTemp()
         {
-            serialPort1.Write("8");
+            writeSerialPort("8");
 
             Thread.Sleep(200);
             String message = serialPort1.ReadExisting();
@@ -118,16 +140,16 @@ namespace TemperatureReader
 
             txtTemperature.Text = tempDouble.ToString();
 
-            Console.WriteLine("temperature2: " + tempDouble);
+            Console.WriteLine(OUTLET_NAME + ": " + tempDouble);
 
             updateGraph(tempDouble, 0);
         }
 
         private void getRouterTemp(int deviceId)
         {
-            serialPort1.Write("2");
+            writeSerialPort("2");
             Thread.Sleep(200);
-            serialPort1.Write("03");
+            writeSerialPort("03");
             Thread.Sleep(200);
 
             String tempStr;
@@ -137,14 +159,15 @@ namespace TemperatureReader
             }
             else
             {
-                tempStr = "287b";
+                tempStr = "143E";
             }
-            serialPort1.Write(tempStr);
+            writeSerialPort(tempStr);
 
-            Thread.Sleep(1000);
+            Thread.Sleep(1500);
             String message = serialPort1.ReadExisting();
 
             String message2 = message.Substring(message.Length - 8, 6);
+            Console.WriteLine(message);
 
             String upper = message2.Substring(0, 2);
             String middle = message2.Substring(2, 2);
@@ -158,7 +181,11 @@ namespace TemperatureReader
             UInt32 tempInt = BitConverter.ToUInt32(wordArray, 0);
             Double tempDouble = (double)tempInt;
 
+            
             txtRouterTemp.Text = tempDouble.ToString();
+
+            htVals[OUTLET_NAME + tempStr] = tempInt;
+            _up.UploadData(DateTime.Now, htVals);
 
             if (first)
             {
@@ -167,9 +194,31 @@ namespace TemperatureReader
             else
             {
                 updateGraph(tempDouble, deviceId);
+                tw.WriteLine(tempDouble);
+                tw.Flush();
             }
-            Console.WriteLine("temperature" + deviceId + ": " + tempDouble);
+            Console.WriteLine(OUTLET_NAME + ": " + tempDouble);
 
+        }
+
+        private void writeSerialPort(String writeStr)
+        {
+            writeSerialPort(writeStr, false);
+           
+        }
+
+        private void writeSerialPort(String writeStr, Boolean lineFeed)
+        {
+            for (int i = 0; i < writeStr.Length; i++)
+            {
+                serialPort1.Write(writeStr.Substring(i, 1));
+                Thread.Sleep(20);
+            }
+
+            if (lineFeed)
+            {
+                serialPort1.WriteLine("");
+            }
         }
 
         private void timer1_Tick(object sender, EventArgs e)
@@ -177,13 +226,20 @@ namespace TemperatureReader
             try
             {
                 getRouterTemp(0);
-                //getRouterTemp(1);
+                getRouterTemp(1);
 
                
             }
             catch (Exception)
             {
-
+                writeSerialPort("",true);
+                writeSerialPort("", true);
+                writeSerialPort("", true);
+                writeSerialPort("", true);
+                writeSerialPort("", true);
+                writeSerialPort("", true);
+                Thread.Sleep(10000);
+                serialPort1.ReadExisting();
             }
 
 
@@ -193,6 +249,8 @@ namespace TemperatureReader
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
             serialPort1.Close();
+            tw.Flush();
+            tw.Close();
         }
 
          

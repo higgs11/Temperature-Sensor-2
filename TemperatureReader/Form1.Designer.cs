@@ -41,12 +41,12 @@
             // serialPort1
             // 
             this.serialPort1.BaudRate = 19200;
-            this.serialPort1.PortName = "COM4";
+            this.serialPort1.PortName = "COM3";
             // 
             // timer1
             // 
             this.timer1.Enabled = true;
-            this.timer1.Interval = 600;
+            this.timer1.Interval = 5000;
             this.timer1.Tick += new System.EventHandler(this.timer1_Tick);
             // 
             // txtTemperature
